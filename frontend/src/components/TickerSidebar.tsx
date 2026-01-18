@@ -7,11 +7,12 @@ interface TickerSidebarProps {
 }
 
 export const TickerSidebar = ({ selectedTicker, onTickerSelect }: TickerSidebarProps) => {
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
   const [tickers, setTickers] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:8000/api/tickers')
+    fetch(`${API_BASE_URL}/api/tickers`)
       .then(res => res.json())
       .then(json => {
         if (json.error) {

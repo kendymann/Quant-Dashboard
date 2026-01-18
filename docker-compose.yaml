@@ -11,7 +11,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data # Persistence
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U app -d market"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -22,8 +22,8 @@ services:
     build: 
       context: ./backend
       dockerfile: Dockerfile
-      ports:
-      - "8001:8000" # Map host port 8001 to container port 8000
+    ports:
+      - "8001:8000"  # Host port 8001 (Coolify uses 8000)
     environment:
       - MARKET_DB_URL=postgresql://app:${POSTGRES_PASSWORD}@postgres:5432/market
     depends_on:
@@ -42,15 +42,14 @@ services:
 
   # --- 4. Quant Engine (Airflow Standalone) ---
   airflow:
-    image: apache/airflow:2.10.0-python3.11
+    build:
+      context: ./airflow
+      dockerfile: Dockerfile
     environment:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql://app:${POSTGRES_PASSWORD}@postgres:5432/market
       - MARKET_DB_URL=postgresql://app:${POSTGRES_PASSWORD}@postgres:5432/market
-      - PYTHONPATH=/opt/airflow/scripts # Crucial for your ETL imports
+      - PYTHONPATH=/opt/airflow/scripts
       - AIRFLOW__CORE__LOAD_EXAMPLES=false
-    volumes:
-      - ./airflow/dags:/opt/airflow/dags
-      - ./airflow/scripts:/opt/airflow/scripts
     user: "${AIRFLOW_UID:-50000}:0"
     command: standalone
     depends_on:
