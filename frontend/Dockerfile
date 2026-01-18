@@ -17,7 +17,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 # These 3 lines are the "Secret Sauce" for Standalone Mode
-COPY --from=builder /app/public ./public
+# COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
