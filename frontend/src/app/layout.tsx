@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: "Quantium Labs",
   description: "Financial Analytics & Market Intelligence Platform",
   icons: {
-    icon: "/favicon.svg",
+    icon: "/Vector.png",
   },
 };
 
