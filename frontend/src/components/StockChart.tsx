@@ -37,6 +37,7 @@ const normalizeToPercentage = (
     }));
 };
 
+// Version: 2.0 - Timeframe-based normalization
 export const StockChart = ({ 
     data, 
     spyData,
@@ -295,6 +296,12 @@ export const StockChart = ({
             return dataDate >= timeframeStartStr;
         });
         const timeframeBaseIndex = timeframeFirstDataIndex >= 0 ? timeframeFirstDataIndex : 0;
+        
+        // Debug: log to verify timeframe normalization
+        console.log('[StockChart v2.0] Timeframe:', selectedTimeframe, 
+            '| Start:', timeframeStartStr, 
+            '| Base Index:', timeframeBaseIndex,
+            '| Base Price:', formattedData[timeframeBaseIndex]?.close);
 
         if (showSPY) {
             // ═══════════════════════════════════════════════════════════════════
