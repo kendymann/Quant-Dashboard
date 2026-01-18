@@ -11,10 +11,11 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data # Persistence
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U app -d market"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
 
   # --- 2. API (FastAPI) ---
   backend:
