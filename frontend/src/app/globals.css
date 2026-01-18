@@ -374,7 +374,7 @@ body {
 
 .ticker-watermark-text {
   font-family: var(--font-sans);
-  font-size: clamp(5.5rem, 10vw, 14rem);
+  font-size: clamp(5.0rem, 8vw, 10rem);
   font-weight: 700;
   color: rgba(255, 255, 255, 0.846);
   letter-spacing: -0.03em;

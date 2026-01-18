@@ -5,6 +5,7 @@ import { TickerSidebar } from '../components/TickerSidebar';
 
 export default function Home() {
   const [data, setData] = useState<any[]>([]);
+  const [spyData, setSpyData] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedTicker, setSelectedTicker] = useState<string>('AAPL');
   const [selectedTimeframe, setSelectedTimeframe] = useState<string>('ALL');
@@ -13,7 +14,9 @@ export default function Home() {
   const [showPrice, setShowPrice] = useState<boolean>(true);
   const [showSMA, setShowSMA] = useState<boolean>(true);
   const [showBollinger, setShowBollinger] = useState<boolean>(true);
+  const [showSPY, setShowSPY] = useState<boolean>(false);
 
+  // Fetch main ticker data
   useEffect(() => {
     setLoading(true);
     fetch(`http://localhost:8000/api/prices/${selectedTicker}`)
@@ -31,6 +34,22 @@ export default function Home() {
         setLoading(false);
       });
   }, [selectedTicker]);
+
+  // Fetch SPY data when comparison is enabled
+  useEffect(() => {
+    if (showSPY && spyData.length === 0) {
+      fetch('http://localhost:8000/api/prices/SPY')
+        .then(res => res.json())
+        .then(json => {
+          if (json.error) {
+            console.error('SPY API Error:', json.error);
+            return;
+          }
+          setSpyData(json);
+        })
+        .catch(err => console.error('SPY Fetch Error:', err));
+    }
+  }, [showSPY, spyData.length]);
 
   // Extract latest technical specs
   const latestData = data.length > 0 ? data[data.length - 1] : null;
@@ -143,14 +162,17 @@ export default function Home() {
           >
             {data.length > 0 ? (
               <StockChart 
-                data={data} 
+                data={data}
+                spyData={spyData}
                 selectedTimeframe={selectedTimeframe}
                 showPrice={showPrice}
                 showSMA={showSMA}
                 showBollinger={showBollinger}
+                showSPY={showSPY}
                 onTogglePrice={() => setShowPrice(!showPrice)}
                 onToggleSMA={() => setShowSMA(!showSMA)}
                 onToggleBollinger={() => setShowBollinger(!showBollinger)}
+                onToggleSPY={() => setShowSPY(!showSPY)}
               />
             ) : (
               <div 

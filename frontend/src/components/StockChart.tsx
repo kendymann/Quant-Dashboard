@@ -6,70 +6,103 @@ import {
     LineSeries,
     AreaSeries,
     Time,
-    ISeriesApi
+    ISeriesApi,
+    IChartApi
 } from 'lightweight-charts';
 import React, { useEffect, useRef, useState } from 'react';
 
 interface StockChartProps {
     data: any[];
+    spyData: any[];
     selectedTimeframe: string;
     showPrice: boolean;
     showSMA: boolean;
     showBollinger: boolean;
+    showSPY: boolean;
     onTogglePrice: () => void;
     onToggleSMA: () => void;
     onToggleBollinger: () => void;
+    onToggleSPY: () => void;
 }
+
+// Percentage Normalization (0% Baseline)
+// Formula: ((currentPrice / firstVisiblePrice) - 1) * 100
+const normalizeToPercentage = (
+    prices: { time: Time; value: number }[], 
+    basePrice: number
+): { time: Time; value: number }[] => {
+    return prices.map(p => ({
+        time: p.time,
+        value: ((p.value / basePrice) - 1) * 100
+    }));
+};
 
 export const StockChart = ({ 
     data, 
+    spyData,
     selectedTimeframe,
     showPrice,
     showSMA,
     showBollinger,
+    showSPY,
     onTogglePrice,
     onToggleSMA,
-    onToggleBollinger
+    onToggleBollinger,
+    onToggleSPY
 }: StockChartProps) => {
     const mainChartRef = useRef<HTMLDivElement>(null);
     const rsiChartRef = useRef<HTMLDivElement>(null);
-    const mainChartInstanceRef = useRef<ReturnType<typeof createChart> | null>(null);
+    const mainChartInstanceRef = useRef<IChartApi | null>(null);
     const rsiChartInstanceRef = useRef<ReturnType<typeof createChart> | null>(null);
     
     // Series refs for visibility toggling
     const candlestickSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+    const priceLineSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
     const smaSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
     const bollingerAreaRef = useRef<ISeriesApi<"Area"> | null>(null);
     const upperBandRef = useRef<ISeriesApi<"Line"> | null>(null);
     const lowerBandRef = useRef<ISeriesApi<"Line"> | null>(null);
+    const spySeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
+    const baselineRef = useRef<ISeriesApi<"Line"> | null>(null);
+    
+    // Store formatted data for re-basing
+    const formattedDataRef = useRef<any[]>([]);
+    const spyPriceMapRef = useRef<Map<string, number>>(new Map());
     
     // Current RSI value for display
     const [currentRSI, setCurrentRSI] = useState<number | null>(null);
+    
+    // Alpha calculation (Ticker % - SPY %)
+    const [tickerReturn, setTickerReturn] = useState<number>(0);
+    const [spyReturn, setSpyReturn] = useState<number>(0);
+    const alpha = tickerReturn - spyReturn;
 
-    // Toggle visibility effect
+    // Toggle visibility effects (only when NOT in SPY comparison mode)
     useEffect(() => {
-        if (candlestickSeriesRef.current) {
+        if (!showSPY && candlestickSeriesRef.current) {
             candlestickSeriesRef.current.applyOptions({ visible: showPrice });
         }
-    }, [showPrice]);
+    }, [showPrice, showSPY]);
 
     useEffect(() => {
-        if (smaSeriesRef.current) {
+        if (!showSPY && smaSeriesRef.current) {
             smaSeriesRef.current.applyOptions({ visible: showSMA });
         }
-    }, [showSMA]);
+    }, [showSMA, showSPY]);
 
     useEffect(() => {
-        if (bollingerAreaRef.current) {
-            bollingerAreaRef.current.applyOptions({ visible: showBollinger });
+        if (!showSPY) {
+            if (bollingerAreaRef.current) {
+                bollingerAreaRef.current.applyOptions({ visible: showBollinger });
+            }
+            if (upperBandRef.current) {
+                upperBandRef.current.applyOptions({ visible: showBollinger });
+            }
+            if (lowerBandRef.current) {
+                lowerBandRef.current.applyOptions({ visible: showBollinger });
+            }
         }
-        if (upperBandRef.current) {
-            upperBandRef.current.applyOptions({ visible: showBollinger });
-        }
-        if (lowerBandRef.current) {
-            lowerBandRef.current.applyOptions({ visible: showBollinger });
-        }
-    }, [showBollinger]);
+    }, [showBollinger, showSPY]);
 
     useEffect(() => {
         // Early return if refs or data are invalid
@@ -212,89 +245,253 @@ export const StockChart = ({
                 rsi_14: d.rsi_14,
             };
         });
+        formattedDataRef.current = formattedData;
 
-        // Candlestick Series - clinical monochrome
-        const candlestickSeries = mainChart.addSeries(CandlestickSeries, {
-            upColor: '#FFFFFF',
-            downColor: '#FFFFFF',
-            borderVisible: false,
-            wickUpColor: '#FFFFFF',
-            wickDownColor: '#FFFFFF',
-            visible: showPrice,
-            priceFormat: {
-                type: 'price',
-                precision: 2,
-                minMove: 0.01,
-            },
-        });
-        candlestickSeries.setData(formattedData.map(d => ({
-            time: d.time,
-            open: d.open!,
-            high: d.high!,
-            low: d.low!,
-            close: d.close!,
-        })));
-        candlestickSeriesRef.current = candlestickSeries;
+        // Build SPY price map
+        const spyPriceMap = new Map<string, number>();
+        if (spyData && spyData.length > 0) {
+            spyData.forEach(d => {
+                const dateStr = d.time.includes('T') ? d.time.split('T')[0] : d.time;
+                if (d.close !== null) {
+                    spyPriceMap.set(dateStr, d.close);
+                }
+            });
+        }
+        spyPriceMapRef.current = spyPriceMap;
 
-        // Bollinger Bands data
-        const bollingerUpperData = formattedData
-            .filter(d => d.bollinger_upper !== null && d.bollinger_lower !== null)
-            .map(d => ({ time: d.time, value: d.bollinger_upper! }));
-        
-        const bollingerLowerData = formattedData
-            .filter(d => d.bollinger_upper !== null && d.bollinger_lower !== null)
-            .map(d => ({ time: d.time, value: d.bollinger_lower! }));
+        if (showSPY) {
+            // ═══════════════════════════════════════════════════════════════════
+            // COMPARISON MODE: Percentage Normalization (0% Baseline)
+            // ═══════════════════════════════════════════════════════════════════
+            
+            const priceData = formattedData.map(d => ({ 
+                time: d.time, 
+                value: d.close! 
+            }));
+            
+            // Get first price as base
+            const basePrice = priceData[0]?.value || 1;
+            const normalizedPriceData = normalizeToPercentage(priceData, basePrice);
+            
+            // Set initial ticker return
+            const lastTickerReturn = normalizedPriceData[normalizedPriceData.length - 1]?.value || 0;
+            setTickerReturn(lastTickerReturn);
+            
+            // Main ticker line (percentage) with custom formatter
+            const priceLine = mainChart.addSeries(LineSeries, {
+                color: '#FFFFFF',
+                lineWidth: 2,
+                priceLineVisible: true,
+                lastValueVisible: true,
+                priceFormat: {
+                    type: 'custom',
+                    formatter: (price: number) => {
+                        const sign = price >= 0 ? '+' : '';
+                        return `${sign}${price.toFixed(1)}%`;
+                    },
+                },
+            });
+            priceLine.setData(normalizedPriceData);
+            priceLineSeriesRef.current = priceLine;
 
-        // Bollinger Bands - International Orange borders with ghost fill
-        const bollingerArea = mainChart.addSeries(AreaSeries, {
-            lineColor: 'rgba(255, 69, 0, 0.4)',
-            topColor: 'rgba(255, 255, 255, 0.03)',
-            bottomColor: 'rgba(255, 255, 255, 0.03)',
-            priceLineVisible: false,
-            lastValueVisible: false,
-            visible: showBollinger,
-        });
-        bollingerArea.setData(bollingerLowerData);
-        bollingerAreaRef.current = bollingerArea;
+            // SPY Benchmark line (percentage)
+            if (spyPriceMap.size > 0) {
+                const firstSpyPrice = spyPriceMap.get(formattedData[0].time as string);
+                
+                if (firstSpyPrice) {
+                    const spyLineData = formattedData
+                        .map(d => {
+                            const spyPrice = spyPriceMap.get(d.time as string);
+                            if (spyPrice) {
+                                return { time: d.time, value: spyPrice };
+                            }
+                            return null;
+                        })
+                        .filter((d): d is { time: Time; value: number } => d !== null);
 
-        // Upper band line - International Orange (#ff4500)
-        const upperBandLine = mainChart.addSeries(LineSeries, {
-            color: '#ff4500',
-            lineWidth: 1,
-            priceLineVisible: false,
-            lastValueVisible: false,
-            visible: showBollinger,
-        });
-        upperBandLine.setData(bollingerUpperData);
-        upperBandRef.current = upperBandLine;
+                    const normalizedSpyData = normalizeToPercentage(spyLineData, firstSpyPrice);
+                    
+                    // Set initial SPY return
+                    const lastSpyReturn = normalizedSpyData[normalizedSpyData.length - 1]?.value || 0;
+                    setSpyReturn(lastSpyReturn);
 
-        // Lower band line - International Orange (#ff4500)
-        const lowerBandLine = mainChart.addSeries(LineSeries, {
-            color: '#ff4500',
-            lineWidth: 1,
-            priceLineVisible: false,
-            lastValueVisible: false,
-            visible: showBollinger,
-        });
-        lowerBandLine.setData(bollingerLowerData);
-        lowerBandRef.current = lowerBandLine;
+                    const spySeries = mainChart.addSeries(LineSeries, {
+                        color: 'rgba(255, 255, 255, 0.4)',
+                        lineWidth: 1,
+                        lineStyle: 2, // Dashed
+                        priceLineVisible: false,
+                        lastValueVisible: true,
+                        title: 'SPY',
+                        priceFormat: {
+                            type: 'custom',
+                            formatter: (price: number) => {
+                                const sign = price >= 0 ? '+' : '';
+                                return `${sign}${price.toFixed(1)}%`;
+                            },
+                        },
+                    });
+                    spySeries.setData(normalizedSpyData);
+                    spySeriesRef.current = spySeries;
+                }
+            }
 
-        // 20-day SMA Line - Electric Cyan (#00d4ff)
-        const smaData = formattedData
-            .filter(d => d.sma_20 !== null)
-            .map(d => ({ time: d.time, value: d.sma_20! }));
-        
-        const smaSeries = mainChart.addSeries(LineSeries, {
-            color: '#00d4ff',
-            lineWidth: 1,
-            priceLineVisible: false,
-            lastValueVisible: false,
-            visible: showSMA,
-        });
-        smaSeries.setData(smaData);
-        smaSeriesRef.current = smaSeries;
+            // Baseline at 0% (Break-even line)
+            const baselineData = formattedData.map(d => ({ time: d.time, value: 0 }));
+            const baseline = mainChart.addSeries(LineSeries, {
+                color: 'rgba(39, 39, 42, 1)', // zinc-800
+                lineWidth: 1,
+                lineStyle: 2, // Dashed
+                priceLineVisible: false,
+                lastValueVisible: false,
+                crosshairMarkerVisible: false,
+            });
+            baseline.setData(baselineData);
+            baselineRef.current = baseline;
 
-        // RSI Line
+            // Dynamic Re-basing: Update on visible range change
+            const rebaseHandler = () => {
+                const visibleRange = mainChart.timeScale().getVisibleLogicalRange();
+                if (!visibleRange || !priceLineSeriesRef.current) return;
+
+                const barsInfo = priceLineSeriesRef.current.barsInLogicalRange(visibleRange);
+                if (!barsInfo || barsInfo.barsBefore === undefined) return;
+
+                // Find first visible bar index
+                const firstVisibleIndex = Math.max(0, Math.ceil(-barsInfo.barsBefore));
+                if (firstVisibleIndex >= formattedDataRef.current.length) return;
+
+                const newBaseTime = formattedDataRef.current[firstVisibleIndex]?.time;
+                const newBasePrice = formattedDataRef.current[firstVisibleIndex]?.close;
+
+                if (newBasePrice && priceLineSeriesRef.current) {
+                    // Recalculate ticker percentage values
+                    const priceDataAll = formattedDataRef.current.map(d => ({ 
+                        time: d.time, 
+                        value: d.close! 
+                    }));
+                    const rebasedPriceData = normalizeToPercentage(priceDataAll, newBasePrice);
+                    priceLineSeriesRef.current.setData(rebasedPriceData);
+                    
+                    // Update ticker return state
+                    const newTickerReturn = rebasedPriceData[rebasedPriceData.length - 1]?.value || 0;
+                    setTickerReturn(newTickerReturn);
+
+                    // Recalculate SPY percentage values
+                    if (spySeriesRef.current && spyPriceMapRef.current.size > 0) {
+                        const newSpyBasePrice = spyPriceMapRef.current.get(newBaseTime as string);
+                        if (newSpyBasePrice) {
+                            const spyDataAll = formattedDataRef.current
+                                .map(d => {
+                                    const spyPrice = spyPriceMapRef.current.get(d.time as string);
+                                    if (spyPrice) {
+                                        return { time: d.time, value: spyPrice };
+                                    }
+                                    return null;
+                                })
+                                .filter((d): d is { time: Time; value: number } => d !== null);
+                            
+                            const rebasedSpyData = normalizeToPercentage(spyDataAll, newSpyBasePrice);
+                            spySeriesRef.current.setData(rebasedSpyData);
+                            
+                            // Update SPY return state
+                            const newSpyReturn = rebasedSpyData[rebasedSpyData.length - 1]?.value || 0;
+                            setSpyReturn(newSpyReturn);
+                        }
+                    }
+                }
+            };
+
+            // Subscribe to visible range changes for dynamic re-basing
+            mainTimeScale.subscribeVisibleLogicalRangeChange(rebaseHandler);
+
+        } else {
+            // ═══════════════════════════════════════════════════════════════════
+            // ABSOLUTE MODE: Dollar prices with SMA and Bollinger Bands
+            // ═══════════════════════════════════════════════════════════════════
+            
+            // Candlestick Series - clinical monochrome
+            const candlestickSeries = mainChart.addSeries(CandlestickSeries, {
+                upColor: '#FFFFFF',
+                downColor: '#FFFFFF',
+                borderVisible: false,
+                wickUpColor: '#FFFFFF',
+                wickDownColor: '#FFFFFF',
+                visible: showPrice,
+                priceFormat: {
+                    type: 'price',
+                    precision: 2,
+                    minMove: 0.01,
+                },
+            });
+            candlestickSeries.setData(formattedData.map(d => ({
+                time: d.time,
+                open: d.open!,
+                high: d.high!,
+                low: d.low!,
+                close: d.close!,
+            })));
+            candlestickSeriesRef.current = candlestickSeries;
+
+            // Bollinger Bands data
+            const bollingerUpperData = formattedData
+                .filter(d => d.bollinger_upper !== null && d.bollinger_lower !== null)
+                .map(d => ({ time: d.time, value: d.bollinger_upper! }));
+            
+            const bollingerLowerData = formattedData
+                .filter(d => d.bollinger_upper !== null && d.bollinger_lower !== null)
+                .map(d => ({ time: d.time, value: d.bollinger_lower! }));
+
+            // Bollinger Bands - International Orange borders with ghost fill
+            const bollingerArea = mainChart.addSeries(AreaSeries, {
+                lineColor: 'rgba(255, 69, 0, 0.4)',
+                topColor: 'rgba(255, 255, 255, 0.03)',
+                bottomColor: 'rgba(255, 255, 255, 0.03)',
+                priceLineVisible: false,
+                lastValueVisible: false,
+                visible: showBollinger,
+            });
+            bollingerArea.setData(bollingerLowerData);
+            bollingerAreaRef.current = bollingerArea;
+
+            // Upper band line - International Orange (#ff4500)
+            const upperBandLine = mainChart.addSeries(LineSeries, {
+                color: '#ff4500',
+                lineWidth: 1,
+                priceLineVisible: false,
+                lastValueVisible: false,
+                visible: showBollinger,
+            });
+            upperBandLine.setData(bollingerUpperData);
+            upperBandRef.current = upperBandLine;
+
+            // Lower band line - International Orange (#ff4500)
+            const lowerBandLine = mainChart.addSeries(LineSeries, {
+                color: '#ff4500',
+                lineWidth: 1,
+                priceLineVisible: false,
+                lastValueVisible: false,
+                visible: showBollinger,
+            });
+            lowerBandLine.setData(bollingerLowerData);
+            lowerBandRef.current = lowerBandLine;
+
+            // 20-day SMA Line - Electric Cyan (#00d4ff)
+            const smaData = formattedData
+                .filter(d => d.sma_20 !== null)
+                .map(d => ({ time: d.time, value: d.sma_20! }));
+            
+            const smaSeries = mainChart.addSeries(LineSeries, {
+                color: '#00d4ff',
+                lineWidth: 1,
+                priceLineVisible: false,
+                lastValueVisible: false,
+                visible: showSMA,
+            });
+            smaSeries.setData(smaData);
+            smaSeriesRef.current = smaSeries;
+        }
+
+        // RSI Line (always shown)
         const rsiData = formattedData
             .filter(d => d.rsi_14 !== null)
             .map(d => ({ time: d.time, value: d.rsi_14! }));
@@ -423,10 +620,13 @@ export const StockChart = ({
             
             // Clear series refs
             candlestickSeriesRef.current = null;
+            priceLineSeriesRef.current = null;
             smaSeriesRef.current = null;
             bollingerAreaRef.current = null;
             upperBandRef.current = null;
             lowerBandRef.current = null;
+            spySeriesRef.current = null;
+            baselineRef.current = null;
             
             if (mainChart) {
                 mainChart.remove();
@@ -437,33 +637,90 @@ export const StockChart = ({
                 rsiChartInstanceRef.current = null;
             }
         };
-    }, [data, selectedTimeframe]);
+    }, [data, spyData, selectedTimeframe, showSPY]);
+
+    // Format alpha with color
+    const alphaFormatted = `${alpha >= 0 ? '+' : ''}${alpha.toFixed(1)}%`;
+    const alphaColor = alpha >= 0 ? '#00ff41' : '#ff4500'; // Signal Green or International Orange
 
     return (
         <div className="chart-container">
             {/* Interactive Chart Legend - Toggle Controls */}
             <div className="chart-legend">
-                <div 
-                    className={`chart-legend-item ${!showPrice ? 'disabled' : ''}`}
-                    style={{ color: '#FFFFFF' }}
-                    onClick={onTogglePrice}
-                >
-                    PRICE
-                </div>
-                <div 
-                    className={`chart-legend-item ${!showSMA ? 'disabled' : ''}`}
-                    style={{ color: '#00d4ff' }}
-                    onClick={onToggleSMA}
-                >
-                    20-DAY SMA
-                </div>
-                <div 
-                    className={`chart-legend-item ${!showBollinger ? 'disabled' : ''}`}
-                    style={{ color: '#ff4500' }}
-                    onClick={onToggleBollinger}
-                >
-                    BOLLINGER ENVELOPE
-                </div>
+                {showSPY ? (
+                    <>
+                        {/* Comparison Mode Legend */}
+                        <div 
+                            className="chart-legend-item" 
+                            style={{ 
+                                color: tickerReturn >= 0 ? '#00ff41' : '#ff4500' 
+                            }}
+                        >
+                            TICKER {tickerReturn >= 0 ? '+' : ''}{tickerReturn.toFixed(1)}%
+                        </div>
+                        <div 
+                            className="chart-legend-item"
+                            style={{ 
+                                color: spyReturn >= 0 
+                                    ? 'rgba(255, 255, 255, 0.84)' 
+                                    : 'rgba(255, 69, 0, 0.4)' 
+                            }}
+                            onClick={onToggleSPY}
+                        >
+                            SPY [COMPARE] {spyReturn >= 0 ? '+' : ''}{spyReturn.toFixed(1)}%
+                        </div>
+                        <div 
+                            className="chart-legend-item" 
+                            style={{ color: 'rgb(237, 237, 243)' }}
+                        >
+                            0% BASELINE
+                        </div>
+                        {/* Alpha Highlight */}
+                        <div 
+                            className="chart-legend-item"
+                            style={{ 
+                                color: alphaColor,
+                                fontWeight: 700,
+                                marginLeft: 'auto'
+                            }}
+                        >
+                            ALPHA: {alphaFormatted}
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        {/* Absolute Mode Legend */}
+                        <div 
+                            className={`chart-legend-item ${!showPrice ? 'disabled' : ''}`}
+                            style={{ color: '#FFFFFF' }}
+                            onClick={onTogglePrice}
+                        >
+                            PRICE
+                        </div>
+                        <div 
+                            className={`chart-legend-item ${!showSMA ? 'disabled' : ''}`}
+                            style={{ color: '#00d4ff' }}
+                            onClick={onToggleSMA}
+                        >
+                            20-DAY SMA
+                        </div>
+                        <div 
+                            className={`chart-legend-item ${!showBollinger ? 'disabled' : ''}`}
+                            style={{ color: '#ff4500' }}
+                            onClick={onToggleBollinger}
+                        >
+                            BOLLINGER ENVELOPE
+                        </div>
+                        {/* SPY Compare Toggle (in same legend row) */}
+                        <div 
+                            className="chart-legend-item disabled"
+                            style={{ color: '#FFFFFF' }}
+                            onClick={onToggleSPY}
+                        >
+                            SPY [COMPARE]
+                        </div>
+                    </>
+                )}
             </div>
             
             {/* Main Price Chart */}
