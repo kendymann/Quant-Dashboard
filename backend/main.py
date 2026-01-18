@@ -13,8 +13,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Your SSH Tunnel URL
-DB_URL = "postgresql://app:K3ndyman2026@localhost:5433/market"
+from dotenv import load_dotenv
+
+# Load local .env file if it exists
+load_dotenv()
+
+# Fetch from environment variable, with a fallback for local dev
+DB_URL = os.getenv("MARKET_DB_URL", "postgresql://app:K3ndyman2026@localhost:5433/market")
 
 @app.get("/api/tickers")
 async def get_tickers():
