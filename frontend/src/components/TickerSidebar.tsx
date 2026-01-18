@@ -26,7 +26,7 @@ export const TickerSidebar = ({ selectedTicker, onTickerSelect }: TickerSidebarP
         console.error('Fetch Error:', err);
         setLoading(false);
       });
-  }, []);
+  }, [API_BASE_URL]);
 
   return (
     <div style={{ width: '100%', height: '100%' }}>

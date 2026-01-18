@@ -10,6 +10,7 @@ services:
       POSTGRES_DB: market
     volumes:
       - postgres_data:/var/lib/postgresql/data # Persistence
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro # Schema init
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U app -d market"]
       interval: 10s
