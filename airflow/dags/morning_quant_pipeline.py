@@ -4,12 +4,12 @@ from airflow.operators.python import PythonOperator
 import pendulum # Better timezone handling than standard datetime
 from airflow.utils.trigger_rule import TriggerRule
 
-# Imports from your existing scripts
-from scripts.extract import extract_market_data
-from scripts.transform import transform_market_data
-from scripts.load import load_to_postgres
-from scripts.factor_analysis import calculate_factors
-from scripts.validate import auto_repair_data
+# Imports from your existing scripts (PYTHONPATH=/opt/airflow/scripts)
+from extract import extract_market_data
+from transform import transform_market_data
+from load import load_to_postgres
+from factor_analysis import calculate_factors
+from validate import auto_repair_data
 
 # Set the timezone to Vancouver
 local_tz = pendulum.timezone("America/Vancouver")
