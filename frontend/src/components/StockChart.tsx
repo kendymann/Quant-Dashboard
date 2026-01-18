@@ -259,6 +259,43 @@ export const StockChart = ({
         }
         spyPriceMapRef.current = spyPriceMap;
 
+        // Calculate timeframe start date for normalization base
+        const getTimeframeStartDate = (timeframe: string): string => {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            let startDate: Date;
+
+            switch (timeframe) {
+                case '1M':
+                    startDate = new Date(today);
+                    startDate.setMonth(startDate.getMonth() - 1);
+                    break;
+                case '3M':
+                    startDate = new Date(today);
+                    startDate.setMonth(startDate.getMonth() - 3);
+                    break;
+                case '1Y':
+                    startDate = new Date(today);
+                    startDate.setFullYear(startDate.getFullYear() - 1);
+                    break;
+                case 'YTD':
+                    startDate = new Date(today.getFullYear(), 0, 1);
+                    break;
+                case 'ALL':
+                default:
+                    return formattedData[0]?.time as string || '';
+            }
+            return startDate.toISOString().split('T')[0];
+        };
+
+        // Find first data point for the selected timeframe
+        const timeframeStartStr = getTimeframeStartDate(selectedTimeframe);
+        const timeframeFirstDataIndex = formattedData.findIndex(d => {
+            const dataDate = typeof d.time === 'string' ? d.time : String(d.time);
+            return dataDate >= timeframeStartStr;
+        });
+        const timeframeBaseIndex = timeframeFirstDataIndex >= 0 ? timeframeFirstDataIndex : 0;
+
         if (showSPY) {
             // ═══════════════════════════════════════════════════════════════════
             // COMPARISON MODE: Percentage Normalization (0% Baseline)
@@ -269,11 +306,11 @@ export const StockChart = ({
                 value: d.close! 
             }));
             
-            // Get first price as base
-            const basePrice = priceData[0]?.value || 1;
+            // Get first price based on SELECTED TIMEFRAME, not full data
+            const basePrice = formattedData[timeframeBaseIndex]?.close || priceData[0]?.value || 1;
             const normalizedPriceData = normalizeToPercentage(priceData, basePrice);
             
-            // Set initial ticker return
+            // Set initial ticker return (from timeframe start to end)
             const lastTickerReturn = normalizedPriceData[normalizedPriceData.length - 1]?.value || 0;
             setTickerReturn(lastTickerReturn);
             
@@ -296,7 +333,8 @@ export const StockChart = ({
 
             // SPY Benchmark line (percentage)
             if (spyPriceMap.size > 0) {
-                const firstSpyPrice = spyPriceMap.get(formattedData[0].time as string);
+                // Use the same timeframe base for SPY normalization
+                const firstSpyPrice = spyPriceMap.get(formattedData[timeframeBaseIndex].time as string);
                 
                 if (firstSpyPrice) {
                     const spyLineData = formattedData
@@ -593,56 +631,6 @@ export const StockChart = ({
 
         if (selectedTimeframe) {
             setTimeframeRange(selectedTimeframe);
-            
-            // Trigger rebase after timeframe change (with small delay to let range settle)
-            if (showSPY && priceLineSeriesRef.current) {
-                setTimeout(() => {
-                    const visibleRange = mainChart.timeScale().getVisibleLogicalRange();
-                    if (!visibleRange || !priceLineSeriesRef.current) return;
-
-                    const barsInfo = priceLineSeriesRef.current.barsInLogicalRange(visibleRange);
-                    if (!barsInfo || barsInfo.barsBefore === undefined) return;
-
-                    const firstVisibleIndex = Math.max(0, Math.ceil(-barsInfo.barsBefore));
-                    if (firstVisibleIndex >= formattedDataRef.current.length) return;
-
-                    const newBaseTime = formattedDataRef.current[firstVisibleIndex]?.time;
-                    const newBasePrice = formattedDataRef.current[firstVisibleIndex]?.close;
-
-                    if (newBasePrice && priceLineSeriesRef.current) {
-                        const priceDataAll = formattedDataRef.current.map(d => ({ 
-                            time: d.time, 
-                            value: d.close! 
-                        }));
-                        const rebasedPriceData = normalizeToPercentage(priceDataAll, newBasePrice);
-                        priceLineSeriesRef.current.setData(rebasedPriceData);
-                        
-                        const newTickerReturn = rebasedPriceData[rebasedPriceData.length - 1]?.value || 0;
-                        setTickerReturn(newTickerReturn);
-
-                        if (spySeriesRef.current && spyPriceMapRef.current.size > 0) {
-                            const newSpyBasePrice = spyPriceMapRef.current.get(newBaseTime as string);
-                            if (newSpyBasePrice) {
-                                const spyDataAll = formattedDataRef.current
-                                    .map(d => {
-                                        const spyPrice = spyPriceMapRef.current.get(d.time as string);
-                                        if (spyPrice) {
-                                            return { time: d.time, value: spyPrice };
-                                        }
-                                        return null;
-                                    })
-                                    .filter((d): d is { time: Time; value: number } => d !== null);
-                                
-                                const rebasedSpyData = normalizeToPercentage(spyDataAll, newSpyBasePrice);
-                                spySeriesRef.current.setData(rebasedSpyData);
-                                
-                                const newSpyReturn = rebasedSpyData[rebasedSpyData.length - 1]?.value || 0;
-                                setSpyReturn(newSpyReturn);
-                            }
-                        }
-                    }
-                }, 100);
-            }
         }
 
         // Resize handler
