@@ -593,6 +593,56 @@ export const StockChart = ({
 
         if (selectedTimeframe) {
             setTimeframeRange(selectedTimeframe);
+            
+            // Trigger rebase after timeframe change (with small delay to let range settle)
+            if (showSPY && priceLineSeriesRef.current) {
+                setTimeout(() => {
+                    const visibleRange = mainChart.timeScale().getVisibleLogicalRange();
+                    if (!visibleRange || !priceLineSeriesRef.current) return;
+
+                    const barsInfo = priceLineSeriesRef.current.barsInLogicalRange(visibleRange);
+                    if (!barsInfo || barsInfo.barsBefore === undefined) return;
+
+                    const firstVisibleIndex = Math.max(0, Math.ceil(-barsInfo.barsBefore));
+                    if (firstVisibleIndex >= formattedDataRef.current.length) return;
+
+                    const newBaseTime = formattedDataRef.current[firstVisibleIndex]?.time;
+                    const newBasePrice = formattedDataRef.current[firstVisibleIndex]?.close;
+
+                    if (newBasePrice && priceLineSeriesRef.current) {
+                        const priceDataAll = formattedDataRef.current.map(d => ({ 
+                            time: d.time, 
+                            value: d.close! 
+                        }));
+                        const rebasedPriceData = normalizeToPercentage(priceDataAll, newBasePrice);
+                        priceLineSeriesRef.current.setData(rebasedPriceData);
+                        
+                        const newTickerReturn = rebasedPriceData[rebasedPriceData.length - 1]?.value || 0;
+                        setTickerReturn(newTickerReturn);
+
+                        if (spySeriesRef.current && spyPriceMapRef.current.size > 0) {
+                            const newSpyBasePrice = spyPriceMapRef.current.get(newBaseTime as string);
+                            if (newSpyBasePrice) {
+                                const spyDataAll = formattedDataRef.current
+                                    .map(d => {
+                                        const spyPrice = spyPriceMapRef.current.get(d.time as string);
+                                        if (spyPrice) {
+                                            return { time: d.time, value: spyPrice };
+                                        }
+                                        return null;
+                                    })
+                                    .filter((d): d is { time: Time; value: number } => d !== null);
+                                
+                                const rebasedSpyData = normalizeToPercentage(spyDataAll, newSpyBasePrice);
+                                spySeriesRef.current.setData(rebasedSpyData);
+                                
+                                const newSpyReturn = rebasedSpyData[rebasedSpyData.length - 1]?.value || 0;
+                                setSpyReturn(newSpyReturn);
+                            }
+                        }
+                    }
+                }, 100);
+            }
         }
 
         // Resize handler
