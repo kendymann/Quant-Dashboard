@@ -23,7 +23,7 @@ def extract_market_data(**context):
     
     # Calculate Date Range
     last_date = get_last_date_from_db()
-    start = last_date + timedelta(days=1) if last_date else (date.today() - timedelta(days=365))
+    start = last_date + timedelta(days=1) if last_date else (date.today() - timedelta(days=1095))  # 3 years
     end = date.today()
     
     if start >= end:
