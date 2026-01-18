@@ -1,0 +1,24 @@
+# --- Databases & Internal Storage ---
+*.sst
+*.meta
+*.ldb
+*.log
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+.env
+
+# --- Frontend (Next.js) ---
+node_modules/
+.next/
+out/
+build/
+.DS_Store
+
+# --- Docker ---
+.docker/

@@ -1,0 +1,454 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Instrument+Sans:wght@400;500;600;700&display=swap');
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOUTHWASH STUDIOS AESTHETIC
+   - Stark monochrome palette
+   - Editorial precision
+   - Typography as architecture
+   - Deliberate negative space
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Core Palette */
+  --black: #000000;
+  --white: #FFFFFF;
+  --zinc-900: #18181b;
+  --zinc-800: #27272a;
+  --zinc-700: #3f3f46;
+  --zinc-600: #52525b;
+  --zinc-500: #71717a;
+  --zinc-400: #a1a1aa;
+  
+  /* Functional Colors */
+  --signal-green: #00ff41;
+  --signal-red: #ff4500;
+  
+  /* Chart Signal Colors */
+  --electric-cyan: #00d4ff;
+  --intl-orange: #ff4500;
+  
+  /* Typography */
+  --font-mono: 'Space Mono', 'SF Mono', 'Fira Code', monospace;
+  --font-sans: 'Instrument Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  
+  /* Spacing Scale */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 32px;
+  --space-xl: 64px;
+  --space-2xl: 128px;
+  
+  /* Border */
+  --border-hairline: 0.5px solid var(--zinc-800);
+  --border-subtle: 1px solid var(--zinc-800);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESET & BASE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background-color: var(--black);
+  color: var(--white);
+  font-family: var(--font-sans);
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TYPOGRAPHY
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Hero Numbers - Massive, architectural */
+.metric-display {
+  font-family: var(--font-mono);
+  font-size: clamp(3rem, 8vw, 7rem);
+  font-weight: 400;
+  letter-spacing: -0.04em;
+  line-height: 0.9;
+}
+
+/* Labels - Precise, technical */
+.label-micro {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--zinc-500);
+}
+
+/* Body Mono */
+.text-mono {
+  font-family: var(--font-mono);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LAYOUT UTILITIES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Editorial Grid Container */
+.editorial-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 0;
+}
+
+/* Hairline Borders */
+.border-hairline {
+  border: var(--border-hairline);
+}
+
+.border-hairline-b {
+  border-bottom: var(--border-hairline);
+}
+
+.border-hairline-r {
+  border-right: var(--border-hairline);
+}
+
+.border-hairline-t {
+  border-top: var(--border-hairline);
+}
+
+.border-hairline-l {
+  border-left: var(--border-hairline);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   INTERACTIVE ELEMENTS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Minimal Button */
+.btn-minimal {
+  background: transparent;
+  border: none;
+  color: var(--zinc-500);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: var(--space-sm) 0;
+  transition: color 200ms ease;
+}
+
+.btn-minimal:hover {
+  color: var(--white);
+}
+
+.btn-minimal.active {
+  color: var(--white);
+}
+
+/* Ticker Button */
+.ticker-btn {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--zinc-500);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-align: left;
+  padding: var(--space-sm) var(--space-sm);
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.ticker-btn:hover {
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.ticker-btn.selected {
+  color: var(--white);
+  background: var(--zinc-900);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ANIMATIONS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Fade In */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 400ms ease forwards;
+}
+
+/* Stagger children */
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 50ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 100ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 150ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 200ms; }
+
+/* Subtle pulse for loading states */
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+/* Number counter effect */
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-count {
+  animation: countUp 300ms ease-out forwards;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CHART CONTAINER
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.chart-container {
+  position: relative;
+  width: 100%;
+  background: transparent;
+}
+
+.chart-legend {
+  position: absolute;
+  top: var(--space-md);
+  left: var(--space-md);
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.8);
+  padding: var(--space-sm);
+  backdrop-filter: blur(4px);
+}
+
+.chart-legend-item {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  line-height: 1.6;
+  cursor: pointer;
+  transition: opacity 150ms ease;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.chart-legend-item:hover {
+  opacity: 0.8;
+}
+
+.chart-legend-item.disabled {
+  opacity: 0.3;
+  text-decoration: line-through;
+}
+
+.chart-legend-item::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 1px;
+  background: currentColor;
+}
+
+.chart-legend-item.disabled::before {
+  background: var(--zinc-700);
+}
+
+/* RSI Threshold Labels */
+.rsi-threshold-label {
+  position: absolute;
+  font-family: var(--font-mono);
+  font-size: clamp(2rem, 5vw, 4rem);
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+  user-select: none;
+  z-index: 5;
+}
+
+.rsi-threshold-label.top {
+  top: 10%;
+  right: var(--space-xl);
+}
+
+.rsi-threshold-label.bottom {
+  bottom: 10%;
+  right: var(--space-xl);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SCROLLBAR
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--zinc-800);
+  border-radius: 0;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--zinc-700);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--zinc-800) transparent;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SELECTION
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+::selection {
+  background: var(--white);
+  color: var(--black);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SIDEBAR
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  width: 64px;
+  border-right: var(--border-hairline);
+  overflow-y: auto;
+  background: var(--black);
+  z-index: 50;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MASSIVE TICKER WATERMARK
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.ticker-watermark {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: var(--space-xl);
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.ticker-watermark-text {
+  font-family: var(--font-sans);
+  font-size: clamp(5.5rem, 10vw, 14rem);
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.846);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  user-select: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SIGNAL COLORS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.text-signal-green {
+  color: var(--signal-green);
+}
+
+.text-signal-red {
+  color: var(--signal-red);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   METRIC TOOLTIPS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.metric-wrapper {
+  position: relative;
+}
+
+.metric-tooltip {
+  position: absolute;
+  top: calc(100% + var(--space-sm));
+  left: 0;
+  z-index: 100;
+  width: 300px;
+  padding: var(--space-md);
+  background: var(--black);
+  border: var(--border-hairline);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: all 150ms ease;
+  pointer-events: none;
+}
+
+.metric-wrapper:hover .metric-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.metric-tooltip p {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.6;
+  color: var(--zinc-400);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  .metric-display {
+    font-size: clamp(2rem, 12vw, 4rem);
+  }
+  
+  .ticker-watermark-text {
+    font-size: clamp(3.5rem, 12vw, 8rem);
+  }
+  
+  .sidebar {
+    width: 48px;
+  }
+  
+  .metric-tooltip {
+    width: 240px;
+  }
+}
