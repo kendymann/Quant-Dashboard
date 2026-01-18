@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  # --- 1. Database (PostgreSQL) ---
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} # Defined in Coolify UI
+      POSTGRES_DB: market
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Persistence
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d market"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- 2. API (FastAPI) ---
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - MARKET_DB_URL=postgresql://app:${POSTGRES_PASSWORD}@postgres:5432/market
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # --- 3. UI (Next.js) ---
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+    depends_on:
+      - backend
+
+  # --- 4. Quant Engine (Airflow Standalone) ---
+  airflow:
+    image: apache/airflow:2.10.0-python3.11
+    environment:
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql://app:${POSTGRES_PASSWORD}@postgres:5432/market
+      - MARKET_DB_URL=postgresql://app:${POSTGRES_PASSWORD}@postgres:5432/market
+      - PYTHONPATH=/opt/airflow/scripts # Crucial for your ETL imports
+      - AIRFLOW__CORE__LOAD_EXAMPLES=false
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/scripts:/opt/airflow/scripts
+    user: "${AIRFLOW_UID:-50000}:0"
+    command: standalone
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
