@@ -4,6 +4,7 @@ import { StockChart } from '../components/StockChart';
 import { TickerSidebar } from '../components/TickerSidebar';
 
 export default function Home() {
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
   const [data, setData] = useState<any[]>([]);
   const [spyData, setSpyData] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -19,7 +20,8 @@ export default function Home() {
   // Fetch main ticker data
   useEffect(() => {
     setLoading(true);
-    fetch(`http://localhost:8000/api/prices/${selectedTicker}`)
+    // Use the dynamic base URL instead of hardcoded localhost
+    fetch(`${API_BASE_URL}/api/prices/${selectedTicker}`)
       .then(res => res.json())
       .then(json => {
         if (json.error) {
@@ -33,12 +35,12 @@ export default function Home() {
         console.error('Fetch Error:', err);
         setLoading(false);
       });
-  }, [selectedTicker]);
+  }, [selectedTicker, API_BASE_URL]);
 
   // Fetch SPY data when comparison is enabled
   useEffect(() => {
     if (showSPY && spyData.length === 0) {
-      fetch('http://localhost:8000/api/prices/SPY')
+      fetch(`${API_BASE_URL}/api/prices/SPY`)
         .then(res => res.json())
         .then(json => {
           if (json.error) {
@@ -49,7 +51,7 @@ export default function Home() {
         })
         .catch(err => console.error('SPY Fetch Error:', err));
     }
-  }, [showSPY, spyData.length]);
+  }, [showSPY, spyData.length, API_BASE_URL]);
 
   // Extract latest technical specs
   const latestData = data.length > 0 ? data[data.length - 1] : null;

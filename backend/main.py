@@ -8,7 +8,7 @@ app = FastAPI()
 # Industry Standard: Allow your Next.js frontend (localhost:3000) to talk to this API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"], 
+    allow_origins=["http://localhost:3000", "http://fwck8k80cwosowoo8w00k8k8.5.78.112.230.sslip.io:3000", "http://fwck8k80cwosowoo8w00k8k8.5.78.112.230.sslip.io"], 
     allow_methods=["*"],
     allow_headers=["*"],
 )
