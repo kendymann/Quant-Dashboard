@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Quant Lab",
-  description: "Financial analytics engine",
+  title: "Quantium Labs",
+  description: "Financial Analytics & Market Intelligence Platform",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
