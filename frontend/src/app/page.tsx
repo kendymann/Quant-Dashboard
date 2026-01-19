@@ -11,11 +11,20 @@ export default function Home() {
   const [selectedTicker, setSelectedTicker] = useState<string>('AAPL');
   const [selectedTimeframe, setSelectedTimeframe] = useState<string>('ALL');
   
+  // Mobile menu state
+  const [menuOpen, setMenuOpen] = useState<boolean>(false);
+  
   // Indicator visibility toggles
   const [showPrice, setShowPrice] = useState<boolean>(true);
   const [showSMA, setShowSMA] = useState<boolean>(true);
   const [showBollinger, setShowBollinger] = useState<boolean>(true);
   const [showSPY, setShowSPY] = useState<boolean>(false);
+  
+  // Close menu when ticker is selected (mobile UX)
+  const handleTickerSelect = (ticker: string) => {
+    setSelectedTicker(ticker);
+    setMenuOpen(false);
+  };
 
   // Fetch main ticker data
   useEffect(() => {
@@ -76,21 +85,36 @@ export default function Home() {
 
   return (
     <main style={{ minHeight: '100vh', display: 'flex' }}>
+      {/* Mobile Menu Button */}
+      <button 
+        className="menu-toggle"
+        onClick={() => setMenuOpen(!menuOpen)}
+        aria-label="Toggle menu"
+      >
+        {menuOpen ? '✕' : '☰'}
+      </button>
+      
+      {/* Mobile Overlay */}
+      <div 
+        className={`sidebar-overlay ${menuOpen ? 'open' : ''}`}
+        onClick={() => setMenuOpen(false)}
+      />
+      
       {/* Sidebar - Fixed left, hairline border */}
-      <aside className="sidebar border-hairline-r">
+      <aside className={`sidebar border-hairline-r ${menuOpen ? 'open' : ''}`}>
         <TickerSidebar 
           selectedTicker={selectedTicker}
-          onTickerSelect={setSelectedTicker}
+          onTickerSelect={handleTickerSelect}
         />
       </aside>
 
       {/* Main Content Area */}
-      <div style={{ flex: 1, marginLeft: '64px' }}>
+      <div className="main-content" style={{ flex: 1, marginLeft: '64px' }}>
         <div className="editorial-grid" style={{ maxWidth: '1920px', margin: '0 auto' }}>
           
           {/* Hero Metrics Section */}
           <header 
-            className="border-hairline-b"
+            className="border-hairline-b metrics-header"
             style={{ 
               gridColumn: '1 / -1', 
               padding: 'var(--space-lg) var(--space-xl)',
@@ -128,7 +152,7 @@ export default function Home() {
 
           {/* Ticker Watermark + Timeframe Controls */}
           <section 
-            className="border-hairline-b"
+            className="border-hairline-b watermark-section"
             style={{ 
               gridColumn: '1 / -1', 
               padding: 'var(--space-xl) var(--space-xl)',
@@ -142,7 +166,7 @@ export default function Home() {
             </div>
 
             {/* Timeframe Buttons */}
-            <nav style={{ position: 'relative', zIndex: 10, display: 'flex', gap: 'var(--space-lg)' }}>
+            <nav className="timeframe-nav" style={{ position: 'relative', zIndex: 10, display: 'flex', gap: 'var(--space-lg)' }}>
               {timeframes.map((timeframe) => (
                 <button
                   key={timeframe}

@@ -435,20 +435,138 @@ body {
    RESPONSIVE
    ═══════════════════════════════════════════════════════════════════════════ */
 
-@media (max-width: 768px) {
+/* Hamburger Menu Button */
+.menu-toggle {
+  display: none;
+  position: fixed;
+  top: var(--space-md);
+  left: var(--space-md);
+  z-index: 100;
+  background: var(--zinc-900);
+  border: var(--border-hairline);
+  color: var(--white);
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 16px;
+}
+
+/* Mobile Overlay */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 40;
+}
+
+.sidebar-overlay.open {
+  display: block;
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
   .metric-display {
-    font-size: clamp(2rem, 12vw, 4rem);
+    font-size: clamp(2.5rem, 10vw, 5rem);
   }
   
   .ticker-watermark-text {
-    font-size: clamp(3.5rem, 12vw, 8rem);
+    font-size: clamp(4rem, 10vw, 8rem);
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .menu-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   
   .sidebar {
-    width: 48px;
+    transform: translateX(-100%);
+    transition: transform 200ms ease;
+    width: 200px;
+  }
+  
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  
+  .main-content {
+    margin-left: 0 !important;
+  }
+  
+  .metric-display {
+    font-size: clamp(1.75rem, 10vw, 3rem);
+  }
+  
+  .ticker-watermark-text {
+    font-size: clamp(2.5rem, 15vw, 5rem);
   }
   
   .metric-tooltip {
-    width: 240px;
+    width: 220px;
+    left: 0;
+    right: auto;
+  }
+  
+  .chart-legend {
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+    max-width: calc(100vw - 32px);
+  }
+  
+  .chart-legend-item {
+    font-size: 9px;
+  }
+  
+  /* Stack metrics vertically */
+  .metrics-header {
+    grid-template-columns: 1fr !important;
+    gap: var(--space-md) !important;
+  }
+  
+  /* Reduce chart heights */
+  .chart-main {
+    height: 280px !important;
+  }
+  
+  .chart-rsi {
+    height: 100px !important;
+  }
+  
+  /* Timeframe buttons - horizontal scroll */
+  .timeframe-nav {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: var(--space-sm);
+  }
+  
+  /* Watermark section */
+  .watermark-section {
+    min-height: 100px !important;
+    padding: var(--space-md) !important;
+  }
+}
+
+/* Small phones */
+@media (max-width: 480px) {
+  .metric-display {
+    font-size: clamp(1.5rem, 12vw, 2.5rem);
+  }
+  
+  .ticker-watermark-text {
+    font-size: clamp(2rem, 18vw, 4rem);
+  }
+  
+  .label-micro {
+    font-size: 9px;
+  }
+  
+  .btn-minimal {
+    font-size: 10px;
+    padding: var(--space-xs) 0;
   }
 }

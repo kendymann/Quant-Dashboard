@@ -716,14 +716,16 @@ export const StockChart = ({
             
             {/* Main Price Chart */}
             <div 
-                ref={mainChartRef} 
+                ref={mainChartRef}
+                className="chart-main" 
                 style={{ width: '100%', height: '400px', position: 'relative' }} 
             />
             
             {/* RSI Chart */}
             <div style={{ position: 'relative', marginTop: 'var(--space-sm)' }}>
                 <div 
-                    ref={rsiChartRef} 
+                    ref={rsiChartRef}
+                    className="chart-rsi" 
                     style={{ width: '100%', height: '133px' }} 
                 />                              
                 {/* RSI Y-axis Label */}
