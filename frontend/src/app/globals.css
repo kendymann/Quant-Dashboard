@@ -544,10 +544,30 @@ body {
     padding-bottom: var(--space-sm);
   }
   
-  /* Watermark section */
+  /* Watermark section - stack vertically on mobile */
   .watermark-section {
-    min-height: 100px !important;
+    min-height: auto !important;
     padding: var(--space-md) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: var(--space-sm) !important;
+  }
+  
+  /* Watermark above buttons on mobile */
+  .ticker-watermark {
+    position: relative !important;
+    inset: auto !important;
+    justify-content: flex-start !important;
+    padding-right: 0 !important;
+    order: 1;
+  }
+  
+  .ticker-watermark-text {
+    opacity: 0.9;
+  }
+  
+  .timeframe-nav {
+    order: 2;
   }
 }
 
